@@ -33,9 +33,9 @@
 
 ## 개발 순서
 
-1. llama.cpp 로컬 서버 실행과 상태 확인
-2. Python 기반 `ask` CLI 및 스트리밍 응답
-3. 파일 목록, 부분 읽기, `rg` 검색 도구
+1. llama.cpp 로컬 서버 실행과 상태 확인 ✅
+2. Python 기반 `ask` CLI 및 스트리밍 응답 ✅
+3. 파일 목록, 읽기 전용 검색 및 분석 컨텍스트 수집 ✅
 4. 패치 미리보기, 적용, Git diff 및 되돌리기
 5. 명령 허용 목록, 타임아웃, 작업공간 경로 검증
 6. Unity 컴파일 및 EditMode/PlayMode 테스트 연동
@@ -52,6 +52,63 @@
 - Unreal의 `.uasset` 및 `.umap` 파일은 직접 수정하지 않습니다.
 - Unity Scene 및 Prefab 변경은 가능한 경우 Unity Editor API를 사용합니다.
 
+## 빠른 시작
+
+Python 3.10 이상이 필요합니다. 저장소에는 외부 Python 런타임 의존성이 없습니다. Windows Python Launcher가 설치되어 있다면 별도 설치 없이 저장소의 실행 파일을 사용할 수 있습니다.
+
+```powershell
+.\local-agent.cmd --help
+```
+
+패키지 형태로 설치하려면 `py -m pip install -e .`을 실행한 뒤 `local-agent` 명령을 사용합니다. 빌드 도구를 내려받을 수 없는 오프라인 환경에서는 위의 `local-agent.cmd`를 사용합니다.
+
+llama.cpp의 `llama-server.exe`와 GGUF 모델은 저장소 밖에 준비합니다. 서버는 셸 문자열을 통하지 않고 구조화된 인자 목록으로 실행됩니다.
+
+```powershell
+.\local-agent.cmd serve `
+  --server C:\Tools\llama.cpp\llama-server.exe `
+  --model D:\Models\model.gguf `
+  --ctx-size 16384 `
+  --gpu-layers 999
+```
+
+다른 터미널에서 서버 상태를 확인하고 질문할 수 있습니다.
+
+```powershell
+.\local-agent.cmd status
+.\local-agent.cmd ask "C++에서 RAII를 간단히 설명해줘"
+```
+
+프로젝트 조사는 모델 없이도 동작합니다.
+
+```powershell
+.\local-agent.cmd inspect D:\Projects\MyGame
+.\local-agent.cmd inspect D:\Projects\MyGame --search "PlayerController"
+```
+
+`analyze`는 질문과 관련도가 높은 텍스트 파일을 제한된 크기로 모아 로컬 서버에 전달합니다.
+
+```powershell
+.\local-agent.cmd analyze D:\Projects\MyGame "플레이어 점프 로직의 흐름을 설명해줘"
+```
+
+기본 서버 주소는 `http://127.0.0.1:8080`입니다. `--base-url` 또는 `LOCAL_AGENT_BASE_URL`로 변경할 수 있습니다. 루프백이 아닌 서버는 실수로 외부에 코드를 전송하지 않도록 차단되며, 필요한 경우에만 `--allow-remote`로 명시적으로 허용합니다. 모델 이름은 `--model` 또는 `LOCAL_AGENT_MODEL`로 지정합니다.
+
+## 현재 안전 범위
+
+- 프로젝트 조사는 읽기 전용이며 심볼릭 링크를 따라가지 않습니다.
+- 파일당 512KB, 분석당 기본 48,000문자와 20개 파일로 제한합니다.
+- `.env`, 모델 파일, Unity/Unreal 바이너리 에셋과 엔진 생성 디렉터리를 제외합니다.
+- 서버 실행은 포그라운드에서 이뤄져 `Ctrl+C`로 종료할 수 있습니다.
+- 현재 버전에는 파일 수정이나 임의 명령 실행 기능이 없습니다.
+
+## 테스트
+
+```powershell
+$env:PYTHONPATH = "src"
+py -m unittest discover -s tests -v
+```
+
 ## 상태
 
-현재 저장소는 초기 설계 단계입니다. 첫 번째 구현 목표는 Windows에서 llama.cpp 서버를 실행하고 로컬 프로젝트를 읽기 전용으로 분석하는 CLI입니다.
+첫 번째 구현 목표인 Windows용 llama.cpp 서버 실행, OpenAI 호환 스트리밍 질문, 로컬 프로젝트 읽기 전용 검색 및 분석 CLI가 구현되었습니다. 다음 단계는 안전한 패치 미리보기와 Git diff 작업 흐름입니다.

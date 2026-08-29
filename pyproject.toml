@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-agent"
+version = "0.1.0"
+description = "Offline-first code analysis CLI for local llama.cpp servers"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Local Agent contributors" }]
+dependencies = []
+
+[project.scripts]
+local-agent = "local_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
